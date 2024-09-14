@@ -5,6 +5,8 @@ from resizeimage import resizeimage
 from tkinter import ttk, messagebox
 import mysql.connector
 import uuid
+import random
+import string
 
 
 class Qr_Generator:
@@ -28,7 +30,7 @@ class Qr_Generator:
 
         emp_title = Label(emp_frame, text='Employee Detail', font=('goudy old style', 20), bg='#043256', fg='white').place(x=0, y=0, relwidth=1)
 
-        # Employee ID Input Field (Read-only, auto-generated after data retrieval)
+        # Employee ID Input Field (Read-only, auto-generated after data insertion)
         lbl_empid = Label(emp_frame, text='Employee ID:', font=('times new roman', 15, 'bold'), bg='white').place(x=20, y=100)
         txt_empid = Entry(emp_frame, textvariable=self.var_empid, font=('times new roman', 15), bg='lightyellow', state='readonly')
         txt_empid.place(x=200, y=100)
@@ -99,6 +101,18 @@ class Qr_Generator:
         self.lbl8_msg = Label(self.qr_frame, text='', font=('times new roman', 10, 'bold'), bg='white')
         self.lbl8_msg.place(x=85, y=340)
         
+    def generate_emp_id(self):
+        # Generate a random 4-digit number
+        digits = ''.join(random.choices(string.digits, k=4))
+        
+        # Generate a random uppercase letter
+        letter = random.choice(string.ascii_uppercase)
+        
+        # Combine the digits and letter to form the Employee ID
+        emp_id = digits + letter
+        return emp_id
+
+        
     def retrieve_data(self):
         emp_id = self.var_search_id.get()  # Get the entered Employee ID
 
@@ -136,9 +150,10 @@ class Qr_Generator:
 
         
     def Add(self):
-        emp_id = str(uuid.uuid4())  # Generate a unique UUID and convert it to string
+        # Generate a new Employee ID (4 digits + 1 letter)
+        new_emp_id = self.generate_emp_id() 
     
-        self.var_empid.set(emp_id)  # Set the generated UUID to the Employee ID field
+        # self.var_empid.set(emp_id)  # Set the generated UUID to the Employee ID field
 
         empnamee = self.var_name.get()
         mobilee = self.var_mobile.get()
@@ -155,7 +170,7 @@ class Qr_Generator:
         # Create the table if it doesn't exist
         try:
             sql_create_table = """CREATE TABLE IF NOT EXISTS emp_info (
-                            id VARCHAR(36) PRIMARY KEY,
+                            id VARCHAR(5) PRIMARY KEY,
                             empname VARCHAR(100),
                             mobile VARCHAR(15),
                             salary DECIMAL(10,2)
@@ -171,13 +186,17 @@ class Qr_Generator:
         # Insert data into the table
         try:
             sql_insert = "INSERT INTO emp_info (id, empname, mobile, salary) VALUES (%s, %s, %s, %s)"
-            val = (emp_id, empnamee, mobilee, salaryy)
+            val = (new_emp_id, empnamee, mobilee, salaryy)
             mycursor.execute(sql_insert, val)
             mysqldb.commit()
             messagebox.showinfo("information", "Employee inserted successfully")
 
             # Clear the form fields after successful insertion
-            self.clear()
+            self.var_empid.set(new_emp_id)  # Display the generated Employee ID (read-only field)
+            self.var_name.set('')
+            self.var_mobile.set('')
+            self.var_salary.set('')
+            self.var_empid.focus_set()
 
         except Exception as e:
             messagebox.showerror("Error", f"Error: {str(e)}")
@@ -272,7 +291,7 @@ class Qr_Generator:
         empnamee = self.var_name.get()
         mobilee = self.var_mobile.get()
         salaryy = self.var_salary.get()
-        if self.var_empid.get()=='' or self.var_name.get()=='' or self.var_mobile.get()=='' or self.var_salary.get()=='':
+        if self.var_name.get()=='' or self.var_mobile.get()=='' or self.var_salary.get()=='':
             self.msg = 'All Fields Are Mendatory!!'
             self.lbl_msg.config(text=self.msg,fg='red')
         else:
